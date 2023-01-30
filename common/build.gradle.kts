@@ -19,6 +19,7 @@ kotlin {
                 api(compose.foundation)
                 api(compose.materialIconsExtended)
                 api(compose.material3)
+                api("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
             }
         }
 

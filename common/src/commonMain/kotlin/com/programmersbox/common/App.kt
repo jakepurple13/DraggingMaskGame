@@ -20,9 +20,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
+import kotlinx.datetime.LocalTime
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,18 +45,7 @@ internal fun App() {
         var timer by timer(!showFound, foundText)
 
         val readableTimer by remember {
-            derivedStateOf {
-                val t = timer.roundToLong()
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(t)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(t)
-                val milliseconds = TimeUnit.MILLISECONDS.toMillis(t)
-                String.format(
-                    "%02d:%02d.%03d",
-                    minutes,
-                    seconds - TimeUnit.MINUTES.toSeconds(minutes),
-                    milliseconds - TimeUnit.SECONDS.toMillis(seconds)
-                )
-            }
+            derivedStateOf { LocalTime.fromMillisecondOfDay(timer.roundToInt()).toString() }
         }
 
         LaunchedEffect(canvasSize) {
@@ -97,9 +85,7 @@ internal fun App() {
                 },
                 bottomBar = {
                     BottomAppBar(
-                        actions = {
-                            Text(readableTimer)
-                        },
+                        actions = { Text(readableTimer) },
                         floatingActionButton = {
                             OutlinedButton(
                                 onClick = {

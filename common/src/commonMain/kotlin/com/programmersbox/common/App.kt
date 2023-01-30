@@ -1,13 +1,11 @@
 package com.programmersbox.common
 
 import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +19,7 @@ import androidx.compose.ui.unit.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
+import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -41,6 +40,7 @@ internal fun App() {
                         itemOffset.y in offset.y..(offset.y + size)
             }
         }
+        var points by remember { mutableStateOf(0.0) }
         var showFound by remember(itemOffset) { mutableStateOf(false) }
         var timer by timer(!showFound, foundText)
 
@@ -68,6 +68,7 @@ internal fun App() {
                     TopAppBar(
                         title = { Text("Masking") },
                         actions = {
+                            Text("${animateIntAsState(points.roundToInt()).value} points")
                             OutlinedButton(
                                 onClick = {
                                     scope.launch {
@@ -89,6 +90,8 @@ internal fun App() {
                         floatingActionButton = {
                             OutlinedButton(
                                 onClick = {
+                                    val pointsGained = itemOffset.getDistance() - timer
+                                    points += pointsGained.absoluteValue
                                     val x = Random.nextInt(0, canvasSize.width.roundToInt())
                                     val y = Random.nextInt(0, canvasSize.height.roundToInt())
                                     itemOffset = Offset(x.toFloat(), y.toFloat())
@@ -107,13 +110,14 @@ internal fun App() {
                         .padding(p)
                         .background(MaterialTheme.colorScheme.onSurface)
                 ) {
-                    val data = updateTransitionData(foundText)
-                    Text(
-                        "Here!",
-                        modifier = Modifier
+                    val checkTime by checkTime(foundText, showFound)
+                    val data = updateTransitionData(foundText, checkTime)
+                    Box(
+                        Modifier
                             .offset { itemOffset.round() }
-                            .scale(data.scale),
-                        color = data.color,
+                            .scale(data.scale)
+                            .size(30.dp)
+                            .background(data.color, shape = CircleShape)
                     )
                 }
 
@@ -134,14 +138,25 @@ internal fun App() {
     }
 }
 
+private data class TransitionItem(
+    val foundText: Boolean,
+    val timer: Int
+)
+
 @Composable
-private fun updateTransitionData(foundText: Boolean): TransitionData {
-    val transition = updateTransition(foundText)
+private fun updateTransitionData(foundText: Boolean, timer: Int): TransitionData {
+    val transition = updateTransition(TransitionItem(foundText, timer))
     val color = transition.animateColor { state ->
-        if (state) Color(0xFF2ecc71)
-        else MaterialTheme.colorScheme.surface
+        if (state.foundText) {
+            when (state.timer) {
+                in 0..500 -> Alizarin
+                in 500..800 -> Sunflower
+                in 800..1000 -> Emerald
+                else -> Emerald
+            }
+        } else MaterialTheme.colorScheme.surface
     }
-    val size = transition.animateFloat { state -> if (state) 1f else .75f }
+    val size = transition.animateFloat { state -> if (state.foundText) 1f else .75f }
     return remember(transition) { TransitionData(color, size) }
 }
 
@@ -166,3 +181,18 @@ internal fun timer(runTimer: Boolean, foundText: Boolean): MutableState<Double> 
 
     return counter
 }
+
+@Composable
+internal fun checkTime(start: Boolean, isFound: Boolean) = produceState(0, start) {
+    if (!isFound) {
+        value = 0
+        while (start) {
+            delay(1)
+            value += 1
+        }
+    }
+}
+
+private val Emerald = Color(0xFF2ecc71)
+private val Sunflower = Color(0xFFf1c40f)
+private val Alizarin = Color(0xFFe74c3c)
